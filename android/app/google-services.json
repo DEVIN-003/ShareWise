@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "159333153495",
+    "project_id": "sharewise-aeaac",
+    "storage_bucket": "sharewise-aeaac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:159333153495:android:aba9eb397d475d17ee0e92",
+        "android_client_info": {
+          "package_name": "com.example.login_sample"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "159333153495-ipp3h5peoulcdbsdgde39c8pdmqibp2j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.login_sample",
+            "certificate_hash": "9b8af9376eb2fc96f204770c3d28f4462c5728cb"
+          }
+        },
+        {
+          "client_id": "159333153495-b9ee3uccpks78srqvkvv4hvlo5lf2inf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA34UagjksZRbWwaoEV5BGIPzD8nOn_jyk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "159333153495-b9ee3uccpks78srqvkvv4hvlo5lf2inf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
