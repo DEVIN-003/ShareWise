@@ -5,6 +5,15 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+  Future<void> sendPasswordResetLink(String email) async{
+    try{
+      await _auth.sendPasswordResetEmail(email: email);
+    }
+    catch(e){
+      print(e.toString());
+    }
+  }
+
   // Sign in with Google
   Future<User?> signInWithGoogle() async {
     try {

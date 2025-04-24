@@ -1,10 +1,11 @@
 import 'dart:developer';
-import 'package:flutter/material.dart';
-import 'service.dart'; // Ensure AuthService is imported
+import 'service.dart';
 import 'signup_screen.dart';
 import 'package:login_sample/screens/welcome_screen.dart';
 import '/widgets/button.dart';
 import '/widgets/textfield.dart';
+import '/screens/forget_pass.dart';
+import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,7 +16,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _auth = AuthService();
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>(); // Key for form validation
 
   final _email = TextEditingController();
   final _password = TextEditingController();
@@ -33,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF9BE3A8), Color(0xFF5F7FCB)],
+            colors: [Color(0xFF9BE3A8), Color(0xFF5F7FCB)], // More Green, Less Blue
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -48,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Text(
                   "Login",
                   style: TextStyle(
-                    fontSize: 40,
+                    fontSize: 30,
                     fontWeight: FontWeight.w500,
                     color: Colors.white,
                   ),
@@ -62,14 +63,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return "Email is required";
                     }
-                    String emailPattern =
-                        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+                    String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
                     if (!RegExp(emailPattern).hasMatch(value)) {
                       return "Enter a valid email";
                     }
                     return null;
                   },
                 ),
+
                 const SizedBox(height: 20),
                 CustomTextField(
                   hint: "Enter Password",
@@ -86,40 +87,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
+                Align(
+                    alignment: Alignment.centerRight,
+                    child: InkWell(onTap:(){
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPassword(),));
+                    }, child: Text("Forgot Password?",
+                        style: TextStyle(
+                            height: 4,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold)))),
                 const SizedBox(height: 30),
                 CustomButton(
                   label: "Login",
                   onPressed: () => _validateAndLogin(context),
-                  color: const Color(0xFF6CC9CE),
-                ),
-                const SizedBox(height: 15),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.white),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                    ),
-                    icon: ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
-                      child: Image.asset(
-                        'assets/icons/google_image.png',
-                        height: 24,
-                        width: 24,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    label: const Text(
-                      "Sign in with Google",
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    onPressed: () => _signInWithGoogle(context),
-                  ),
+                  color: Color(0xFF6CC9CE),
                 ),
                 const SizedBox(height: 5),
                 Row(
@@ -162,38 +143,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   _login(BuildContext context) async {
-    try {
-      final user = await _auth.loginUserWithEmailAndPassword(
-        _email.text.trim(),
-        _password.text.trim(),
-      );
+    final user = await _auth.loginUserWithEmailAndPassword(
+        _email.text, _password.text);
 
-      if (!mounted) return;
-
-      if (user != null) {
-        log("User Logged In");
-        goToHome(context);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    }
-  }
-
-  _signInWithGoogle(BuildContext context) async {
-    final user = await _auth.signInWithGoogle();
     if (!mounted) return;
 
     if (user != null) {
-      log("Google Sign-In successful");
+      log("User Logged In");
       goToHome(context);
-    } else {
-      log("Google Sign-In failed");
     }
   }
 }

@@ -12,7 +12,6 @@ class SignupScreen extends StatefulWidget {
   @override
   State<SignupScreen> createState() => _SignupScreenState();
 }
-//hello
 class _SignupScreenState extends State<SignupScreen> {
   final _auth = AuthService();
   final _formKey = GlobalKey<FormState>();
