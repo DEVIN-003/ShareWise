@@ -1,7 +1,7 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'service.dart'; // Ensure that your AuthService is imported
-import 'signup_screen.dart'; // Navigate to the SignupScreen
+import 'service.dart'; // Ensure AuthService is imported
+import 'signup_screen.dart';
 import 'package:login_sample/screens/welcome_screen.dart';
 import '/widgets/button.dart';
 import '/widgets/textfield.dart';
@@ -93,8 +93,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: const Color(0xFF6CC9CE),
                 ),
                 const SizedBox(height: 15),
-
-                // Updated Google Sign-In Button
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -123,7 +121,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () => _signInWithGoogle(context),
                   ),
                 ),
-
                 const SizedBox(height: 5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -165,14 +162,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   _login(BuildContext context) async {
-    final user = await _auth.loginUserWithEmailAndPassword(
-        _email.text, _password.text);
+    try {
+      final user = await _auth.loginUserWithEmailAndPassword(
+        _email.text.trim(),
+        _password.text.trim(),
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (user != null) {
-      log("User Logged In");
-      goToHome(context);
+      if (user != null) {
+        log("User Logged In");
+        goToHome(context);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 

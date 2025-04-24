@@ -8,25 +8,19 @@ class AuthService {
   // Sign in with Google
   Future<User?> signInWithGoogle() async {
     try {
-      // Sign out the current session before signing in again
       await _googleSignIn.signOut();
-
-      // Trigger Google Sign-In flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        return null; // User canceled the sign-in
+        return null;
       }
 
-      // Get authentication details
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-      // Create a new credential using the googleAuth details
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Sign in to Firebase using the Google credentials
       final UserCredential userCredential = await _auth.signInWithCredential(credential);
       return userCredential.user;
     } catch (e) {
@@ -57,9 +51,16 @@ class AuthService {
         password: password,
       );
       return userCredential.user;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw Exception('No user found for that email.');
+      } else if (e.code == 'wrong-password') {
+        throw Exception('Wrong password.');
+      } else {
+        throw Exception('Login failed. ${e.message}');
+      }
     } catch (e) {
-      print("Login failed: $e");
-      return null;
+      throw Exception('An unexpected error occurred. Please try again.');
     }
   }
 }
