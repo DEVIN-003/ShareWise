@@ -102,6 +102,35 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () => _validateAndLogin(context),
                   color: Color(0xFF6CC9CE),
                 ),
+                const SizedBox(height: 15),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: Image.asset(
+                        'assets/icons/google_image.png',
+                        height: 24,
+                        width: 24,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    label: const Text(
+                      "Sign in with Google",
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    onPressed: () => _signInWithGoogle(context),
+                  ),
+                ),
                 const SizedBox(height: 5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -143,14 +172,38 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   _login(BuildContext context) async {
-    final user = await _auth.loginUserWithEmailAndPassword(
-        _email.text, _password.text);
+    try {
+      final user = await _auth.loginUserWithEmailAndPassword(
+        _email.text.trim(),
+        _password.text.trim(),
+      );
 
+      if (!mounted) return;
+
+      if (user != null) {
+        log("User Logged In");
+        goToHome(context);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  _signInWithGoogle(BuildContext context) async {
+    final user = await _auth.signInWithGoogle();
     if (!mounted) return;
 
     if (user != null) {
-      log("User Logged In");
+      log("Google Sign-In successful");
       goToHome(context);
+    } else {
+      log("Google Sign-In failed");
     }
   }
 }
