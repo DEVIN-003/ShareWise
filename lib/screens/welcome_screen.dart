@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:login_sample/screens/home_screen.dart';
 import 'package:login_sample/auth/login_screen.dart';
 import 'package:video_player/video_player.dart';
+import 'package:login_sample/screens/upload_materials_screen.dart'; // 👈 ADD THIS LINE
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -19,7 +20,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     super.initState();
     _controller = VideoPlayerController.asset("assets/videos/BOOKS_portrait.mp4")
       ..setLooping(true)
-      ..setVolume(0.0); // Reduce processing time by muting
+      ..setVolume(0.0); // Muted to save processing
 
     _initializeVideoPlayerFuture = _controller.initialize().then((_) {
       _controller.play();
@@ -46,7 +47,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 if (snapshot.connectionState == ConnectionState.done) {
                   return VideoPlayer(_controller);
                 } else {
-                  return const Center(child: CircularProgressIndicator()); // Minimal delay fallback
+                  return const Center(child: CircularProgressIndicator());
                 }
               },
             ),
@@ -69,7 +70,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white, // White text for visibility
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -77,7 +78,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 _buildButton("UPLOAD MATERIALS", const Color(0xFF7689DE), () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                    MaterialPageRoute(builder: (context) => const UploadMaterialsScreen()), // 👈 CORRECT SCREEN
                   );
                 }),
                 const SizedBox(height: 20),
@@ -92,12 +93,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
           ),
 
-          // Logout Button in AppBar Position
+          // Logout Button
           Positioned(
             top: 40,
             right: 20,
             child: IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white), // White for visibility
+              icon: const Icon(Icons.logout, color: Colors.white),
               onPressed: () => _logout(context),
             ),
           ),
@@ -122,7 +123,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-
             color: Colors.white,
           ),
         ),
