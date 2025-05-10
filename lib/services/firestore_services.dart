@@ -31,4 +31,40 @@ class FirestoreService {
     }
     return null;
   }
+
+  Future<void> saveSubjectData(String subjectName, Subject subject) async {
+    try {
+      final data = subject.toMap();
+      print("Saving data for '$subjectName': $data"); // Debug print
+
+      await FirebaseFirestore.instance
+          .collection('resource_links')
+          .doc(subjectName)
+          .set(data);
+
+      print("Data saved successfully");
+    } catch (e) {
+      print("Error saving subject data: $e");
+      rethrow;
+    }
+  }
+  Future<void> appendLinksToSubject(String title, List<String> newWebsites, List<String> newYoutubes) async {
+    final docRef = FirebaseFirestore.instance.collection('resource_links').doc(title);
+
+    final snapshot = await docRef.get();
+
+    if (!snapshot.exists) {
+      throw Exception("Subject does not exist!");
+    }
+
+    final currentData = snapshot.data()!;
+    final existingWebsites = List<String>.from(currentData['wT'] ?? []);
+    final existingYoutubes = List<String>.from(currentData['yT'] ?? []);
+
+    await docRef.update({
+      'wT': existingWebsites + newWebsites,
+      'yT': existingYoutubes + newYoutubes,
+    });
+  }
+
 }

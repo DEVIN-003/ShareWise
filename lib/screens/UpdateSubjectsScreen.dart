@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:login_sample/screens/update_subject.dart';
+import 'package:login_sample/screens/verify_user_details.dart';
 import '../services/firestore_services.dart'; // Make sure the path is correct
 import '../auth/login_screen.dart'; // To handle logout if needed
 
@@ -102,9 +104,11 @@ class _UpdateSubjectsScreenState extends State<UpdateSubjectsScreen> {
                         style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                       onTap: () {
-                        // Later you can navigate to Edit Subject Screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Tapped ${filteredSubjects[index]["name"]}')),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => VerifyUserDetails(previousScreen: "Upload",subjectName: filteredSubjects[index]["id"]!,),
+                          ),
                         );
                       },
                     ),

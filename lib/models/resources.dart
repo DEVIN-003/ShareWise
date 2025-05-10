@@ -19,4 +19,13 @@ class Subject {
       youtubeLinks: List<String>.from(data['yT'] ?? []),
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': title,
+      'desc': description,
+      'wT': websiteLinks,
+      'yT': youtubeLinks,
+    };
+  }
 }

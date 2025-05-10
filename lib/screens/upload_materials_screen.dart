@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:login_sample/auth/login_screen.dart'; // Import LoginScreen
-import 'package:login_sample/screens/SubjectsScreen.dart'; // Import UpdateSubjectsScreen
+import 'package:login_sample/screens/UpdateSubjectsScreen.dart'; // Import UpdateSubjectsScreen
 import 'package:login_sample/screens/enter_subject_screen.dart';
 
 
