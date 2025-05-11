@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:login_sample/screens/verify_user_details.dart';
 import '/widgets/button.dart';
 import '/widgets/textfield.dart';
 import 'package:login_sample/auth/login_screen.dart';
@@ -20,7 +21,12 @@ class _EnterSubjectScreenState extends State<EnterSubjectScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Subject "$subjectName" submitted successfully!')),
       );
-      Navigator.pop(context); // Go back after submission
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VerifyUserDetails(previousScreen: "Create",subjectName: subjectName),
+        ),
+      );
     }
   }
 
