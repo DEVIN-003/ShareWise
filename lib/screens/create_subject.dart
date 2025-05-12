@@ -73,7 +73,7 @@ class _CreateSubjectState extends State<CreateSubject> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Enter Details"),
+        title: Text("Enter Details - ${widget.subjectName}"),
         backgroundColor: const Color(0xFF9AC1F0),
       ),
       body: SingleChildScrollView(
