@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:login_sample/screens/home_screen.dart';
 import '../services/firestore_services.dart';
-import 'final_display.dart';
 
 class UpdateSubject extends StatefulWidget {
   final String subjectName;

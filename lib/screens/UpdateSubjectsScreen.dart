@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:login_sample/screens/update_subject.dart';
 import 'package:login_sample/screens/verify_user_details.dart';
-import '../services/firestore_services.dart'; // Make sure the path is correct
-import '../auth/login_screen.dart'; // To handle logout if needed
+import '../services/firestore_services.dart';
+import '../auth/login_screen.dart';
 
 class UpdateSubjectsScreen extends StatefulWidget {
   const UpdateSubjectsScreen({super.key});

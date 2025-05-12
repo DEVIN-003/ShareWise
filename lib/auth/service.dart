@@ -78,29 +78,52 @@ class AuthService {
   }
 
   bool isValidGitUrl(String url) {
-    final pattern = r'^(https:\/\/|git@)([\w\.@]+)(\/|:)([\w,\-,_,\/]+)(\.git)?$';
+    final pattern = r'^(https:\/\/|git@)([\w\.@]+)(\/|:)([\w\-,_\/]+)\.git$';
     final regex = RegExp(pattern);
     return regex.hasMatch(url);
   }
 
   Future<bool> doesGitRepoExist(String url) async {
     try {
-      // Normalize URL if needed
-      if (!url.endsWith('.git')) {
-        url = url.replaceAll(RegExp(r'\.git$'), '');
-      }
+      if (!url.endsWith('.git')) return false;
+
       final response = await http.head(Uri.parse(url));
-      return response.statusCode == 200 || response.statusCode == 302;
-    } catch (e) {
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> checkGitHubRepoViaAPI(String url) async {
+    // Example: https://github.com/user/repo.git
+    final match = RegExp(r'^https:\/\/github\.com\/([\w\-]+)\/([\w\-]+)\.git$')
+        .firstMatch(url);
+    if (match == null) return false;
+
+    final owner = match.group(1);
+    final repo = match.group(2);
+    final apiUrl = 'https://api.github.com/repos/$owner/$repo';
+
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+      return response.statusCode == 200;
+    } catch (_) {
       return false;
     }
   }
 
   Future<bool> verifyGitLink(String url) async {
-    if (!isValidGitUrl(url)) {
-      return false;
+    if (!isValidGitUrl(url)) return false;
+
+    // First try regular HEAD check
+    if (await doesGitRepoExist(url)) return true;
+
+    // Fallback to GitHub API check if it's a GitHub URL
+    if (url.contains('github.com')) {
+      return await checkGitHubRepoViaAPI(url);
     }
-    return await doesGitRepoExist(url);
+
+    return false;
   }
 
   Future<bool> pickAndVerifyCertificate() async {

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:login_sample/screens/home_screen.dart';
 import '../models/resources.dart';
 import '../services/firestore_services.dart';
-import 'final_display.dart';
 
 class CreateSubject extends StatefulWidget {
   final String subjectName;
