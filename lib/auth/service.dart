@@ -1,19 +1,26 @@
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:typed_data';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf_image_renderer/pdf_image_renderer.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-  Future<void> sendPasswordResetLink(String email) async{
-    try{
+
+  String pdfUrl="";
+
+  Future<void> sendPasswordResetLink(String email) async {
+    try {
       await _auth.sendPasswordResetEmail(email: email);
     }
-    catch(e){
+    catch (e) {
       print(e.toString());
     }
   }
@@ -27,14 +34,16 @@ class AuthService {
         return null;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser
+          .authentication;
 
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+          credential);
       return userCredential.user;
     } catch (e) {
       print("Google sign-in failed: $e");
@@ -43,9 +52,11 @@ class AuthService {
   }
 
   // Sign up with Email & Password
-  Future<User?> signupUserWithEmailAndPassword(String email, String password) async {
+  Future<User?> signupUserWithEmailAndPassword(String email,
+      String password) async {
     try {
-      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      final UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -57,9 +68,11 @@ class AuthService {
   }
 
   // Login with Email & Password
-  Future<User?> loginUserWithEmailAndPassword(String email, String password) async {
+  Future<User?> loginUserWithEmailAndPassword(String email,
+      String password) async {
     try {
-      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      final UserCredential userCredential = await _auth
+          .signInWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -78,55 +91,43 @@ class AuthService {
   }
 
   bool isValidGitUrl(String url) {
-    final pattern = r'^(https:\/\/|git@)([\w\.@]+)(\/|:)([\w\-,_\/]+)\.git$';
-    final regex = RegExp(pattern);
-    return regex.hasMatch(url);
-  }
-
-  Future<bool> doesGitRepoExist(String url) async {
-    try {
-      if (!url.endsWith('.git')) return false;
-
-      final response = await http.head(Uri.parse(url));
-      return response.statusCode == 200;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<bool> checkGitHubRepoViaAPI(String url) async {
-    // Example: https://github.com/user/repo.git
-    final match = RegExp(r'^https:\/\/github\.com\/([\w\-]+)\/([\w\-]+)\.git$')
-        .firstMatch(url);
-    if (match == null) return false;
-
-    final owner = match.group(1);
-    final repo = match.group(2);
-    final apiUrl = 'https://api.github.com/repos/$owner/$repo';
-
-    try {
-      final response = await http.get(Uri.parse(apiUrl));
-      return response.statusCode == 200;
-    } catch (_) {
-      return false;
-    }
+    final pattern = r'^(https:\/\/|git@)([\w\.\-@]+)(\/|:)([\w\-/]+)\.git$';
+    return RegExp(pattern).hasMatch(url);
   }
 
   Future<bool> verifyGitLink(String url) async {
     if (!isValidGitUrl(url)) return false;
 
-    // First try regular HEAD check
-    if (await doesGitRepoExist(url)) return true;
+    // Try HEAD request first
+    try {
+      final response = await http.head(Uri.parse(url));
+      if (response.statusCode == 200) return true;
+    } catch (_) {
+      // HEAD failed — move on to GitHub fallback
+    }
 
-    // Fallback to GitHub API check if it's a GitHub URL
-    if (url.contains('github.com')) {
-      return await checkGitHubRepoViaAPI(url);
+    // Fallback to GitHub API
+    final match = RegExp(r'^https:\/\/github\.com\/([\w\-]+)\/([\w\-]+)\.git$')
+        .firstMatch(url);
+
+    if (match != null) {
+      final owner = match.group(1);
+      final repo = match.group(2);
+      final apiUrl = 'https://api.github.com/repos/$owner/$repo';
+
+      try {
+        final response = await http.get(Uri.parse(apiUrl));
+        return response.statusCode == 200;
+      } catch (_) {
+        return false;
+      }
     }
 
     return false;
   }
 
-  Future<bool> pickAndVerifyCertificate() async {
+  Future<bool> pickAndExtractTextFromPdf({required String subjectName}) async {
+    bool isKeywordCheck = true;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -134,133 +135,138 @@ class AuthService {
     );
 
     if (result == null || result.files.first.bytes == null) {
+      print("No file selected or file is empty.");
       return false;
     }
 
     final Uint8List pdfBytes = result.files.first.bytes!;
+    final user = FirebaseAuth.instance.currentUser;
 
-    try {
-      // Load and extract text using pdf_text
-      final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
-      String fullText = PdfTextExtractor(document).extractText();
-
-      // Step 1: Check for embedded signature metadata
-      final hasLocalSignature = _containsSignatureMetadata(pdfBytes);
-
-      if (hasLocalSignature) {
-        return true;
-      } else if (fullText != null) {
-        final keywords = [
-          // General certificate terms
-          'certificate', 'certified', 'certifies', 'award', 'awarded',
-          'recognition', 'achievement', 'participation', 'completion',
-          'conferred', 'successfully completed', 'entitled', 'granted',
-
-          // Academic terms
-          'student', 'course', 'training', 'degree', 'program',
-          'project', 'internship', 'research', 'publication',
-
-          // Official indicators
-          'seal', 'stamp', 'digital signature', 'issued by',
-          'authorized', 'verified', 'board of', 'institute of',
-
-          // Date/context markers
-          'date of issue', 'valid until', 'presented on',
-
-          // Names and titles
-          'journal', 'editor', 'volume', 'issue',
-
-          // Honours & titles
-          'honor', 'excellence', 'outstanding', 'merit'
-        ];
-
-        final lowerText = fullText.toLowerCase();
-        final keywordFound = keywords.any((word) => lowerText.contains(word));
-
-        if (keywordFound) {
-          return true;
-        }
-      }else{
-        final fileUrl = await uploadPDFFile(pdfBytes);
-
-        if (fileUrl != null) {
-          final hasCloudSignature = await checkPDFSignature(fileUrl);
-          if (hasCloudSignature) {
-            return true;
-          }
-        }
-      }
-
-      // If none of the above checks returned true
-      return false;
-
-    } catch (e) {
-      print('Error verifying certificate: $e');
+    if (user == null) {
+      print("User not logged in");
       return false;
     }
-  }
 
-  bool _containsSignatureMetadata(Uint8List pdfBytes) {
-    final content = String.fromCharCodes(pdfBytes);
-    return content.contains('/Sig') || content.contains('/DigitalSignature') || content.contains('/AcroForm');
-  }
-
-  Future<bool> checkPDFSignature(String fileUrl) async {
-    const apiKey = 'varshetha0204@gmail.com_eIRrYbW8nmZDDD1svO4WYMFgwe3GJnt1jMw1QwPZsDUkb0LlfCVghPfdHvnek2LR';
-    final url = Uri.parse('https://api.pdf.co/v1/pdf/info');
-
-    final headers = {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-    };
-
-    final body = jsonEncode({'url': fileUrl});
+    String extractedText = '';
 
     try {
-      final response = await http.post(url, headers: headers, body: body);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final signatures = data['signatures'] as List<dynamic>?;
-        return signatures != null && signatures.isNotEmpty;
-      } else {
-        print('Signature check failed: ${response.body}');
+      final document = PdfDocument(inputBytes: pdfBytes);
+      for (int i = 0; i < document.pages.count; i++) {
+        extractedText += PdfTextExtractor(document).extractText(
+          startPageIndex: i,
+          endPageIndex: i,
+        ) ??
+            '';
       }
+      document.dispose();
+      print("Text extracted using Syncfusion.");
     } catch (e) {
-      print('Error checking signature: $e');
+      print("Syncfusion extraction error: $e");
     }
-    return false;
+
+    // If Syncfusion extraction failed or text is empty, fall back to OCR
+    if (extractedText.trim().isEmpty) {
+      print("Falling back to OCR...");
+      extractedText = await extractTextUsingOCR(pdfBytes);
+    }
+
+    if (extractedText.trim().isEmpty) {
+      print("Text extraction failed.");
+      return false;
+    }
+
+    final isValid = containsMinimumKeywords(extractedText, subjectName);
+
+    await FirebaseFirestore.instance.collection('certificates').add({
+      'email': user.email,
+      'subject': subjectName,
+      'extractedText': extractedText,
+      'isVerified': isValid,
+      'uploadedAt': Timestamp.now(),
+    });
+    print(isValid);
+    return isValid;
   }
 
 
+  bool containsMinimumKeywords(String extractedText, String subjectName) {
+    final keywords = [
+      // General certificate terms
+      'certificate', 'certified', 'certifies', 'award', 'awarded',
+      'recognition', 'achievement', 'participation', 'completion',
+      'conferred', 'successfully completed', 'entitled', 'granted',
 
-  Future<String?> uploadPDFFile(Uint8List pdfBytes) async {
-    const apiKey = 'varshetha0204@gmail.com_eIRrYbW8nmZDDD1svO4WYMFgwe3GJnt1jMw1QwPZsDUkb0LlfCVghPfdHvnek2LR';
-    final requestUrl = Uri.parse('https://api.pdf.co/v1/file/upload/get-presigned-url?contenttype=application/pdf&name=certificate.pdf');
+      // Academic terms
+      'student', 'course', 'training', 'degree', 'program',
+      'project', 'internship', 'research', 'publication',
 
-    try {
-      // Step 1: Get presigned URL
-      final response = await http.get(requestUrl, headers: {'x-api-key': apiKey});
-      final jsonData = json.decode(response.body);
+      // Official indicators
+      'seal', 'stamp', 'digital signature', 'issued by',
+      'authorized', 'verified', 'board of', 'institute of',
 
-      final uploadUrl = jsonData['presignedUrl'];
-      final fileUrl = jsonData['url'];
+      // Date/context markers
+      'date of issue', 'valid until', 'presented on',
 
-      // Step 2: Upload file
-      final uploadResponse = await http.put(
-        Uri.parse(uploadUrl),
-        headers: {'Content-Type': 'application/pdf'},
-        body: pdfBytes,
+      // Names and titles
+      'journal', 'editor', 'volume', 'issue',
+
+      // Honours & titles
+      'honor', 'excellence', 'outstanding', 'merit'
+    ];
+
+    int matchCount = 0;
+    final lowerText = extractedText.toLowerCase();
+    final lowerSubject = subjectName.toLowerCase();
+
+    for (final keyword in keywords) {
+      if (lowerText.contains(keyword.toLowerCase())) {
+        matchCount++;
+      }
+    }
+    print(matchCount >= 1);
+    print(lowerText.contains(lowerSubject));
+    return matchCount >= 1 && lowerText.contains(lowerSubject);
+  }
+
+  Future<String> extractTextUsingOCR(Uint8List pdfBytes) async {
+    //  1. Write the bytes to a temporary PDF file
+    final tempDir = await getTemporaryDirectory();
+    final pdfPath = '${tempDir.path}/temp.pdf';
+    final pdfFile = File(pdfPath);
+    await pdfFile.writeAsBytes(pdfBytes);
+
+    //  2. Use the file path (not pdfBytes) in PdfImageRenderer
+    final pdfRenderer = PdfImageRenderer(path: pdfFile.path);
+    await pdfRenderer.open();
+
+    // 3. OCR logic
+    String ocrText = '';
+    final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+
+    for (int i = 0; i < 1; i++) {
+      final imageBytes = await pdfRenderer.renderPage(
+        x: 0,
+        y: 0,
+        scale: 1.0,
+        width: 1000,
+        height: 1000,
+        pageIndex: i,
       );
 
-      if (uploadResponse.statusCode == 200) {
-        return fileUrl;
-      } else {
-        print('Upload failed: ${uploadResponse.body}');
-      }
-    } catch (e) {
-      print('Error uploading file: $e');
+      // Save image to temp file
+      final imagePath = '${tempDir.path}/page_$i.png';
+      final imageFile = File(imagePath);
+      await imageFile.writeAsBytes(imageBytes as List<int>);
+
+      final inputImage = InputImage.fromFilePath(imagePath);
+      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+      ocrText += recognizedText.text + '\n';
     }
-    return null;
+
+    await pdfRenderer.close();
+    textRecognizer.close();
+
+    return ocrText;
   }
+
 }

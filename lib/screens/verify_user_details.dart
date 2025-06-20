@@ -110,7 +110,7 @@ class _VerifyUserDetailsState extends State<VerifyUserDetails> {
                 ElevatedButton.icon(
                   onPressed: () async {
                     // Step 1: Pick and Verify the Certificate (No permanent storage)
-                    final isVerified = await _auth.pickAndVerifyCertificate();
+                    final isVerified = await _auth.pickAndExtractTextFromPdf(subjectName: widget.subjectName,);
                     if (isVerified) {
                       ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('✅ Certificate verified!')));
